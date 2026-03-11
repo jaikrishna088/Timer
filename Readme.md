@@ -1,4 +1,4 @@
-# ⏱ KRONOS — Time Master
+# Time Master
 
 A feature-rich, single-file timer web application built with pure HTML, CSS, and JavaScript. No frameworks, no dependencies, no installation required — just open the file in any browser.
 
