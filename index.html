@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEMPUS — Time Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #faf8f4;
+  --warm-white: #f5f2ec;
+  --paper: #ede9e1;
+  --border: #d9d4c9;
+  --border-light: #ece8e0;
+  --ink: #1c1a17;
+  --ink-mid: #4a4540;
+  --ink-light: #8c8578;
+  --gold: #c8a96e;
+  --gold-light: #e8d5b0;
+  --gold-pale: #f5eed8;
+  --terracotta: #c4705a;
+  --sage: #7a9e8a;
+  --slate: #6b7a8d;
+  --shadow-sm: 0 2px 12px rgba(28,26,23,0.06);
+  --shadow-md: 0 8px 32px rgba(28,26,23,0.10);
+  --shadow-lg: 0 20px 60px rgba(28,26,23,0.14);
+  --radius: 18px;
+  --radius-sm: 10px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--cream);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Subtle paper texture */
+body::before {
+  content:'';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(200,169,110,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(122,158,138,0.06) 0%, transparent 50%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── LAYOUT ── */
+.app { position:relative; z-index:2; display:flex; flex-direction:column; height:100vh; }
+
+/* ── HEADER ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 32px;
+  background: rgba(250,248,244,0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex; align-items: baseline; gap: 10px;
+}
+.logo-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 4px;
+}
+.logo-tag {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--ink-light);
+  text-transform: uppercase;
+}
+
+.header-right { display:flex; gap:10px; align-items:center; }
+
+.real-clock {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--ink-mid);
+  letter-spacing: 2px;
+  padding: 0 16px;
+  border-right: 1px solid var(--border);
+}
+
+.hdr-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-light);
+  padding: 7px 16px;
+  border-radius: 50px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all .25s;
+}
+.hdr-btn:hover {
+  background: var(--ink);
+  color: var(--cream);
+  border-color: var(--ink);
+}
+.hdr-btn.gold {
+  background: var(--gold-pale);
+  border-color: var(--gold);
+  color: #8a6530;
+}
+.hdr-btn.gold:hover {
+  background: var(--gold);
+  color: #fff;
+}
+
+/* ── TABS ── */
+.tabs {
+  display: flex; gap: 0;
+  background: var(--warm-white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  flex-shrink: 0;
+}
+.tab {
+  padding: 12px 20px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  color: var(--ink-light);
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  text-transform: uppercase;
+  position: relative;
+}
+.tab:hover { color: var(--ink); }
+.tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+/* ── CONTENT ── */
+.content { flex:1; overflow-y:auto; padding:28px 32px; }
+.panel { display:none; }
+.panel.active { display:block; animation: fadeUp .35s cubic-bezier(.2,.8,.3,1) both; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── CARD ── */
+.card {
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title::before {
+  content: '';
+  display: inline-block;
+  width: 16px; height: 1px;
+  background: var(--gold);
+}
+
+/* ── TIMER LAYOUT ── */
+.timer-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+/* ── CLOCK FACE ── */
+.clock-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.ring-outer {
+  position: relative;
+  width: 280px; height: 280px;
+}
+.ring-outer::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--gold-pale), var(--paper), var(--gold-pale));
+  opacity: .4;
+}
+
+#timerRing { transform: rotate(-90deg); filter: drop-shadow(0 4px 16px rgba(200,169,110,0.18)); }
+.ring-track { fill:none; stroke: var(--paper); stroke-width:6; }
+.ring-progress {
+  fill:none; stroke: var(--gold); stroke-width:6;
+  stroke-linecap: round;
+  stroke-dasharray: 816;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset .15s linear, stroke .4s;
+}
+.ring-progress.warning { stroke: var(--terracotta); }
+.ring-progress.danger  { stroke: #e05252; }
+
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+}
+.main-time {
+  font-family: 'Playfair Display', serif;
+  font-size: 58px;
+  font-weight: 400;
+  color: var(--ink);
+  letter-spacing: 1px;
+  line-height: 1;
+  transition: color .3s;
+}
+.main-time.warning { color: var(--terracotta); }
+.main-time.danger  { color: #e05252; animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.time-label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--ink-light);
+  text-transform: uppercase;
+}
+
+/* ── MODE BADGE ── */
+.mode-badge {
+  font-size: 8px;
+  letter-spacing: 3px;
+  padding: 5px 16px;
+  border-radius: 50px;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+.mode-badge.countdown  { color: #8a6530; border-color: var(--gold); background: var(--gold-pale); }
+.mode-badge.stopwatch  { color: var(--slate); border-color: #aab8c8; background: #edf1f7; }
+.mode-badge.pomodoro   { color: #a04040; border-color: #e8b8b8; background: #fdf0f0; }
+
+/* ── BUTTONS ── */
+.btn {
+  padding: 10px 22px;
+  border-radius: 50px;
+  border: none; cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 2px;
+  transition: all .25s;
+  text-transform: uppercase;
+}
+.btn-primary {
+  background: var(--ink);
+  color: var(--cream);
+  box-shadow: 0 4px 16px rgba(28,26,23,0.2);
+}
+.btn-primary:hover { background: #3a3630; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(28,26,23,0.3); }
+
+.btn-gold {
+  background: var(--gold);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(200,169,110,0.3);
+}
+.btn-gold:hover { background: #b5934a; transform: translateY(-1px); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink-mid);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover { border-color: var(--ink); color: var(--ink); background: var(--warm-white); }
+
+.btn-soft {
+  background: var(--warm-white);
+  color: var(--ink-mid);
+  border: 1px solid var(--border-light);
+}
+.btn-soft:hover { background: var(--paper); border-color: var(--border); }
+
+.btn-danger {
+  background: transparent;
+  color: #c04040;
+  border: 1px solid #e8c0c0;
+}
+.btn-danger:hover { background: #fdf0f0; }
+
+.controls { display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
+
+/* ── SIDEBAR ── */
+.sidebar { display:flex; flex-direction:column; gap:16px; }
+
+/* ── PRESETS ── */
+.presets { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.preset-btn {
+  padding: 12px 6px;
+  background: var(--warm-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--ink-mid);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing:1px;
+  cursor: pointer;
+  text-align: center;
+  transition: all .2s;
+}
+.preset-btn:hover {
+  background: var(--gold-pale);
+  border-color: var(--gold);
+  color: #8a6530;
+}
+.preset-btn span { display:block; font-size:16px; margin-bottom:4px; }
+
+/* ── TIME INPUTS ── */
+.time-inputs { display:flex; gap:8px; align-items:center; }
+.time-input-group { display:flex; flex-direction:column; align-items:center; flex:1; }
+.time-input-group label { font-size:8px; letter-spacing:2px; color:var(--ink-light); margin-bottom:6px; text-transform:uppercase; }
+.time-input-group input {
+  width:100%; padding:10px 4px;
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  text-align: center;
+  outline: none;
+  transition: all .2s;
+}
+.time-input-group input:focus { border-color: var(--gold); background:#fff; box-shadow: 0 0 0 3px var(--gold-pale); }
+.time-sep { font-family:'Playfair Display',serif; font-size:26px; color:var(--border); padding-top:16px; }
+
+/* ── POMODORO ── */
+.pomo-sessions { display:flex; gap:8px; }
+.pomo-dot {
+  width:26px; height:26px; border-radius:50%;
+  background: var(--warm-white);
+  border: 2px solid var(--border);
+  transition: all .3s;
+}
+.pomo-dot.done { background: var(--terracotta); border-color: var(--terracotta); }
+.pomo-dot.current { border-color: var(--terracotta); background: #fdf0f0; animation: pomo-pulse 1.5s ease-in-out infinite; }
+@keyframes pomo-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(196,112,90,.35)} 50%{box-shadow:0 0 0 8px rgba(196,112,90,0)} }
+
+/* ── LAPS ── */
+.laps-list { max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+.laps-list::-webkit-scrollbar { width:4px; }
+.laps-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.lap-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 14px;
+  background: var(--warm-white);
+  border-radius: var(--radius-sm);
+  font-size:10px;
+  animation: fadeUp .2s ease-out;
+}
+.lap-num   { color:var(--ink-light); }
+.lap-time  { color:var(--ink); }
+.lap-delta { font-size:9px; }
+.lap-fastest { color:var(--sage); font-weight:600; }
+.lap-slowest { color:var(--terracotta); }
+
+/* ── ALARM ── */
+.alarm-form { display:flex; gap:10px; align-items:flex-end; }
+.alarm-form input {
+  flex:1; padding:10px 14px;
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  font-size:11px; outline:none;
+  transition: all .2s;
+}
+.alarm-form input:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-pale); }
+.alarm-form input[type="time"]::-webkit-calendar-picker-indicator { opacity:.5; cursor:pointer; }
+.alarm-list { display:flex; flex-direction:column; gap:10px; }
+.alarm-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px 20px;
+  background: var(--warm-white);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  transition: all .3s;
+}
+.alarm-item.active-alarm { border-color:var(--gold); background:var(--gold-pale); }
+.alarm-time-disp { font-family:'Playfair Display',serif; font-size:30px; color:var(--ink); }
+.alarm-label { font-size:9px; letter-spacing:2px; color:var(--ink-light); margin-top:3px; text-transform:uppercase; }
+.alarm-toggle {
+  width:44px; height:24px; border-radius:12px;
+  background:var(--paper); border:1px solid var(--border);
+  cursor:pointer; position:relative; transition:all .3s;
+}
+.alarm-toggle::after {
+  content:''; position:absolute; top:3px; left:3px;
+  width:16px; height:16px; border-radius:50%;
+  background:var(--ink-light); transition:all .3s;
+}
+.alarm-toggle.on { background:var(--gold-pale); border-color:var(--gold); }
+.alarm-toggle.on::after { left:23px; background:var(--gold); }
+
+/* ── WORLD CLOCK ── */
+.world-clocks { display:flex; flex-direction:column; gap:8px; }
+.wc-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 18px;
+  background:var(--warm-white); border-radius:var(--radius-sm);
+  border:1px solid var(--border-light); transition:all .2s;
+}
+.wc-item:hover { border-color:var(--gold-light); background:var(--gold-pale); }
+.wc-city { font-size:13px; color:var(--ink); }
+.wc-zone { font-size:8px; letter-spacing:1px; color:var(--ink-light); margin-top:2px; }
+.wc-time { font-family:'Playfair Display',serif; font-size:26px; color:var(--gold); letter-spacing:1px; }
+.wc-day  { font-size:8px; letter-spacing:1px; color:var(--ink-light); text-align:right; margin-top:4px; }
+
+/* ── BREATHING ── */
+.breath-ring {
+  width:200px; height:200px; border-radius:50%;
+  background: radial-gradient(circle, var(--gold-pale) 0%, rgba(122,158,138,.06) 60%, transparent 100%);
+  border:1px solid var(--gold-light);
+  display:flex; align-items:center; justify-content:center;
+  transition: transform 4s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 50px rgba(200,169,110,.12), inset 0 0 30px rgba(200,169,110,.06);
+}
+.breath-phase { font-family:'Playfair Display',serif; font-size:22px; color:var(--ink); text-align:center; }
+.breath-count { font-size:28px; color:var(--gold); font-family:'Playfair Display',serif; display:block; }
+
+/* ── STATS ── */
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.stat-card { background:#fff; border:1px solid var(--border-light); border-radius:var(--radius); padding:24px; text-align:center; box-shadow:var(--shadow-sm); }
+.stat-num { font-family:'Playfair Display',serif; font-size:52px; color:var(--gold); font-weight:700; line-height:1; }
+.stat-label { font-size:8px; letter-spacing:3px; color:var(--ink-light); margin-top:8px; text-transform:uppercase; }
+
+/* ── STOPWATCH ── */
+.stopwatch-panel { display:flex; flex-direction:column; align-items:center; gap:24px; }
+.sw-time {
+  font-family:'Playfair Display',serif;
+  font-size:90px; font-weight:300;
+  color:var(--ink); letter-spacing:2px; line-height:1;
+}
+.sw-ms { font-size:54px; color:var(--ink-light); }
+
+/* ── FOCUS OVERLAY ── */
+.focus-overlay {
+  position:fixed; inset:0;
+  background: var(--cream);
+  z-index:100; display:none;
+  flex-direction:column;
+  align-items:center; justify-content:center; gap:24px;
+}
+.focus-overlay.active { display:flex; }
+.focus-overlay::before {
+  content:'';
+  position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(200,169,110,.1) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 70%, rgba(122,158,138,.07) 0%, transparent 60%);
+  pointer-events:none;
+}
+.focus-time {
+  font-family:'Playfair Display',serif;
+  font-size:140px; font-weight:300;
+  color:var(--ink); letter-spacing:4px; line-height:1;
+  position:relative; z-index:1;
+}
+.focus-label { font-size:10px; letter-spacing:5px; color:var(--ink-light); text-transform:uppercase; position:relative; z-index:1; }
+.focus-exit {
+  position:absolute; top:24px; right:28px;
+  background:transparent; border:1px solid var(--border);
+  color:var(--ink-light); padding:8px 18px;
+  border-radius:50px; font-family:'DM Mono',monospace;
+  font-size:9px; letter-spacing:2px; cursor:pointer; text-transform:uppercase;
+  transition:all .2s;
+}
+.focus-exit:hover { color:var(--ink); border-color:var(--ink); }
+
+/* ── NOTIFICATION ── */
+.notif {
+  position:fixed; bottom:24px; right:28px;
+  background:#fff; border:1px solid var(--gold-light);
+  border-radius:16px; padding:16px 22px;
+  font-family:'DM Mono',monospace; font-size:10px;
+  z-index:200; transform:translateY(80px); opacity:0;
+  transition:all .35s cubic-bezier(.2,.8,.3,1);
+  box-shadow:var(--shadow-md); max-width:280px;
+}
+.notif.show { transform:translateY(0); opacity:1; }
+.notif-title { color:var(--gold); margin-bottom:4px; letter-spacing:2px; font-size:9px; text-transform:uppercase; }
+.notif-body  { color:var(--ink-mid); font-size:11px; }
+
+/* ── DIVIDER ── */
+.divider { width:40px; height:1px; background:var(--border); margin:0 auto; }
+
+/* ── SCROLLBAR ── */
+.content::-webkit-scrollbar { width:6px; }
+.content::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* ── VISUALIZER ── */
+.visualizer { display:flex; align-items:center; gap:3px; height:24px; justify-content:center; }
+.bar { width:3px; background:var(--gold-light); border-radius:2px; height:3px; transition:height .1s; }
+.bar.active { animation: barAnim var(--dur,.5s) ease-in-out infinite alternate; }
+@keyframes barAnim { from{height:3px} to{height:var(--h,20px)} }
+
+/* ── KB HINTS ── */
+.kb-hints { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+.kb-hint { font-size:8px; letter-spacing:1px; color:var(--ink-light); display:flex; align-items:center; gap:5px; }
+.kb-key { background:var(--warm-white); border:1px solid var(--border); border-radius:4px; padding:2px 7px; font-size:8px; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px) {
+  .timer-layout { grid-template-columns:1fr; }
+  .sidebar { display:grid; grid-template-columns:1fr 1fr; }
+}
+@media(max-width:600px) {
+  .sidebar { grid-template-columns:1fr; }
+  .sw-time { font-size:64px; }
+  .focus-time { font-size:80px; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+  header { padding:14px 18px; }
+  .content { padding:18px; }
+}
+
+/* ── SOUND CARD ── */
+.sound-btn { flex:1; padding:8px; background:var(--warm-white); border:1px solid var(--border-light); border-radius:var(--radius-sm); font-family:'DM Mono',monospace; font-size:9px; cursor:pointer; letter-spacing:1px; transition:all .2s; text-align:center; color:var(--ink-mid); }
+.sound-btn:hover { background:var(--gold-pale); border-color:var(--gold-light); color:#8a6530; }
+</style>
+</head>
+<body>
+
+<!-- FOCUS OVERLAY -->
+<div class="focus-overlay" id="focusOverlay">
+  <button class="focus-exit" onclick="exitFocus()">ESC — EXIT</button>
+  <div class="mode-badge countdown" id="focusBadge">FOCUS MODE</div>
+  <div class="focus-time" id="focusTime">00:00:00</div>
+  <div class="focus-label" id="focusLabel">DEEP WORK SESSION</div>
+  <div class="visualizer" id="focusViz" style="margin-top:8px;">
+    <div class="bar" style="--h:8px;--dur:.4s"></div><div class="bar" style="--h:18px;--dur:.5s"></div>
+    <div class="bar" style="--h:24px;--dur:.35s"></div><div class="bar" style="--h:14px;--dur:.6s"></div>
+    <div class="bar" style="--h:22px;--dur:.45s"></div><div class="bar" style="--h:10px;--dur:.55s"></div>
+    <div class="bar" style="--h:24px;--dur:.4s"></div><div class="bar" style="--h:16px;--dur:.5s"></div>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif">
+  <div class="notif-title" id="notifTitle">COMPLETE</div>
+  <div class="notif-body" id="notifBody">Your session has ended.</div>
+</div>
+
+<div class="app">
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-name">TEMPUS</div>
+      <div class="logo-tag">Time Studio</div>
+    </div>
+    <div class="header-right">
+      <div class="real-clock" id="realClock">--:--:--</div>
+      <button class="hdr-btn gold" onclick="enterFocus()">⊞ Focus Mode</button>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('timer')"    id="tab-timer">Timer</div>
+    <div class="tab"        onclick="switchTab('stopwatch')" id="tab-stopwatch">Stopwatch</div>
+    <div class="tab"        onclick="switchTab('alarm')"    id="tab-alarm">Alarm</div>
+    <div class="tab"        onclick="switchTab('world')"    id="tab-world">World</div>
+    <div class="tab"        onclick="switchTab('breathing')" id="tab-breathing">Breathe</div>
+    <div class="tab"        onclick="switchTab('stats')"    id="tab-stats">Stats</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- TIMER -->
+    <div class="panel active" id="panel-timer">
+      <div class="timer-layout">
+
+        <div class="clock-wrapper">
+          <div class="ring-outer">
+            <svg id="timerRing" width="280" height="280" viewBox="0 0 280 280">
+              <circle class="ring-track" cx="140" cy="140" r="130"/>
+              <circle class="ring-progress" id="ringProgress" cx="140" cy="140" r="130"/>
+            </svg>
+            <div class="ring-center">
+              <div class="main-time" id="mainTime">00:05:00</div>
+              <div class="time-label" id="timeLabel">READY</div>
+            </div>
+          </div>
+
+          <div class="mode-badge countdown" id="modeBadge">Countdown</div>
+
+          <div class="controls">
+            <button class="btn btn-outline" onclick="resetTimer()">↺ Reset</button>
+            <button class="btn btn-primary" id="startStopBtn" onclick="toggleTimer()">▶ Start</button>
+            <button class="btn btn-soft" onclick="addTime(60)">+1 min</button>
+          </div>
+
+          <div class="kb-hints">
+            <div class="kb-hint"><span class="kb-key">Space</span> Start/Stop</div>
+            <div class="kb-hint"><span class="kb-key">R</span> Reset</div>
+            <div class="kb-hint"><span class="kb-key">F</span> Focus</div>
+          </div>
+        </div>
+
+        <div class="sidebar">
+
+          <!-- PRESETS -->
+          <div class="card">
+            <div class="card-title">Quick Presets</div>
+            <div class="presets">
+              <button class="preset-btn" onclick="setPreset(60)"><span>☕</span>1 min</button>
+              <button class="preset-btn" onclick="setPreset(300)"><span>🧘</span>5 min</button>
+              <button class="preset-btn" onclick="setPreset(600)"><span>📖</span>10 min</button>
+              <button class="preset-btn" onclick="setPreset(900)"><span>💪</span>15 min</button>
+              <button class="preset-btn" onclick="setPreset(1500)"><span>🍅</span>25 min</button>
+              <button class="preset-btn" onclick="setPreset(3600)"><span>🏃</span>1 hr</button>
+            </div>
+          </div>
+
+          <!-- CUSTOM TIME -->
+          <div class="card">
+            <div class="card-title">Custom Duration</div>
+            <div class="time-inputs">
+              <div class="time-input-group">
+                <label>Hrs</label>
+                <input type="number" id="inputH" min="0" max="23" value="0" oninput="syncCustomTime()">
+              </div>
+              <div class="time-sep">:</div>
+              <div class="time-input-group">
+                <label>Min</label>
+                <input type="number" id="inputM" min="0" max="59" value="5" oninput="syncCustomTime()">
+              </div>
+              <div class="time-sep">:</div>
+              <div class="time-input-group">
+                <label>Sec</label>
+                <input type="number" id="inputS" min="0" max="59" value="0" oninput="syncCustomTime()">
+              </div>
+            </div>
+          </div>
+
+          <!-- POMODORO -->
+          <div class="card">
+            <div class="card-title">Pomodoro</div>
+            <div class="pomo-sessions" id="pomoSessions"></div>
+            <div style="margin-top:12px;font-size:9px;color:var(--ink-light);letter-spacing:1px;">
+              Session <span id="pomoNum">1</span> of 4 &mdash; <span id="pomoPhase">WORK</span>
+            </div>
+            <button class="btn btn-soft" style="width:100%;margin-top:12px;font-size:9px;" onclick="startPomodoro()">🍅 Start Pomodoro</button>
+          </div>
+
+          <!-- SOUND -->
+          <div class="card">
+            <div class="card-title">Sounds</div>
+            <div class="visualizer" id="sideViz" style="margin-bottom:12px;">
+              <div class="bar" style="--h:8px;--dur:.4s"></div><div class="bar" style="--h:18px;--dur:.5s"></div>
+              <div class="bar" style="--h:24px;--dur:.35s"></div><div class="bar" style="--h:14px;--dur:.6s"></div>
+              <div class="bar" style="--h:22px;--dur:.45s"></div><div class="bar" style="--h:10px;--dur:.55s"></div>
+              <div class="bar" style="--h:24px;--dur:.4s"></div><div class="bar" style="--h:16px;--dur:.5s"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="sound-btn" onclick="playSound('bell')">🔔 Bell</button>
+              <button class="sound-btn" onclick="playSound('beep')">📡 Beep</button>
+              <button class="sound-btn" onclick="playSound('chime')">🎵 Chime</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- STOPWATCH -->
+    <div class="panel" id="panel-stopwatch">
+      <div class="stopwatch-panel">
+        <div class="mode-badge stopwatch">Stopwatch</div>
+        <div class="sw-time">
+          <span id="swH">00</span>:<span id="swM">00</span>:<span id="swS">00</span>.<span class="sw-ms" id="swMs">00</span>
+        </div>
+        <div class="controls">
+          <button class="btn btn-outline" onclick="lapStopwatch()" id="lapBtn" disabled>◉ Lap</button>
+          <button class="btn btn-primary" id="swStartBtn" onclick="toggleStopwatch()">▶ Start</button>
+          <button class="btn btn-danger" onclick="resetStopwatch()">↺ Reset</button>
+        </div>
+        <div class="card" style="width:100%;max-width:580px;">
+          <div class="card-title">Lap Times</div>
+          <div class="laps-list" id="lapsList">
+            <div style="text-align:center;color:var(--ink-light);font-size:10px;padding:20px;letter-spacing:1px;">No laps recorded yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALARM -->
+    <div class="panel" id="panel-alarm">
+      <div style="max-width:580px;margin:0 auto;display:flex;flex-direction:column;gap:20px;">
+        <div class="card">
+          <div class="card-title">Set Alarm</div>
+          <div class="alarm-form">
+            <input type="time" id="alarmTime" value="08:00">
+            <input type="text" id="alarmLabel" placeholder="Label (optional)" style="flex:2">
+            <button class="btn btn-gold" onclick="addAlarm()" style="white-space:nowrap;">Add Alarm</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Active Alarms</div>
+          <div class="alarm-list" id="alarmList">
+            <div style="text-align:center;color:var(--ink-light);font-size:10px;padding:20px;letter-spacing:1px;">No alarms set</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORLD CLOCK -->
+    <div class="panel" id="panel-world">
+      <div style="max-width:680px;margin:0 auto;">
+        <div class="card">
+          <div class="card-title">World Clocks</div>
+          <div class="world-clocks" id="worldClocks"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BREATHING -->
+    <div class="panel" id="panel-breathing">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:28px;">
+        <div class="mode-badge stopwatch" style="color:#7a9e8a;border-color:#b8d4c2;background:#f0f7f3;">Breathing Guide</div>
+
+        <div class="breath-ring" id="breathRing">
+          <div style="text-align:center;">
+            <div class="breath-phase" id="breathPhase">Ready</div>
+            <span class="breath-count" id="breathCount">—</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+          <button class="btn btn-primary" onclick="startBreathing('478')">4-7-8 Relax</button>
+          <button class="btn btn-outline" onclick="startBreathing('box')">Box Breathing</button>
+          <button class="btn btn-outline" onclick="startBreathing('wim')">Wim Hof</button>
+          <button class="btn btn-danger" onclick="stopBreathing()">⏹ Stop</button>
+        </div>
+
+        <div class="card" style="max-width:400px;width:100%;text-align:center;">
+          <div class="card-title">Technique</div>
+          <div id="breathDesc" style="font-size:11px;color:var(--ink-mid);line-height:1.8;">
+            Select a breathing technique above to begin your guided session.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="panel" id="panel-stats">
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-num" id="statSessions">0</div>
+            <div class="stat-label">Sessions Today</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statFocused">0</div>
+            <div class="stat-label">Minutes Focused</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statAlarms">0</div>
+            <div class="stat-label">Alarms Set</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Session History</div>
+          <div id="sessionHistory" style="font-size:10px;color:var(--ink-light);letter-spacing:1px;">No sessions yet.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════
+// STATE
+// ═══════════════════════════════════
+let timerInterval=null,timerRunning=false,timerSeconds=300,timerTotal=300,isCountdown=true;
+let swInterval=null,swRunning=false,swElapsed=0,swStartTime=0;
+let laps=[],alarms=[];
+let pomoSession=1,pomoPhase='work';
+let breathInterval=null,breathTech=null,breathStepIdx=0,breathCount=0;
+let stats={sessions:0,focused:0,alarms:0,history:[]};
+let focusMode=false;
+
+// ═══════════════════════════════════
+// REAL CLOCK
+// ═══════════════════════════════════
+function updateRealClock(){
+  const n=new Date();
+  document.getElementById('realClock').textContent=n.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  checkAlarms(n);
+}
+setInterval(updateRealClock,1000);
+updateRealClock();
+
+// ═══════════════════════════════════
+// TABS
+// ═══════════════════════════════════
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='stats') updateStats();
+}
+
+// ═══════════════════════════════════
+// TIMER
+// ═══════════════════════════════════
+function pad(n){return String(n).padStart(2,'0');}
+function formatTime(s){
+  return `${pad(Math.floor(s/3600))}:${pad(Math.floor((s%3600)/60))}:${pad(s%60)}`;
+}
+
+function updateTimerDisplay(){
+  const ts=formatTime(timerSeconds);
+  document.getElementById('mainTime').textContent=ts;
+  document.getElementById('focusTime').textContent=ts;
+  const el=document.getElementById('mainTime');
+  const ring=document.getElementById('ringProgress');
+  el.classList.remove('warning','danger');
+  ring.classList.remove('warning','danger');
+  if(isCountdown&&timerTotal>0){
+    const pct=timerSeconds/timerTotal;
+    if(pct<0.1){el.classList.add('danger');ring.classList.add('danger');}
+    else if(pct<0.25){el.classList.add('warning');ring.classList.add('warning');}
+  }
+  const circ=2*Math.PI*130;
+  ring.style.strokeDashoffset = isCountdown ? circ-(circ*(timerSeconds/timerTotal)) : circ;
+  document.getElementById('timeLabel').textContent = !timerRunning ? 'READY' : (timerSeconds<=10&&isCountdown ? '⚡ FINAL COUNTDOWN' : 'IN PROGRESS');
+}
+
+function toggleTimer(){timerRunning?pauseTimer():startTimer();}
+function startTimer(){
+  if(timerSeconds<=0&&isCountdown)return;
+  timerRunning=true;
+  document.getElementById('startStopBtn').textContent='⏸ Pause';
+  timerInterval=setInterval(()=>{
+    if(isCountdown){timerSeconds--;if(timerSeconds<=0){timerSeconds=0;timerComplete();}}
+    else timerSeconds++;
+    updateTimerDisplay();
+  },1000);
+  setViz(true);
+}
+function pauseTimer(){
+  timerRunning=false; clearInterval(timerInterval);
+  document.getElementById('startStopBtn').textContent='▶ Resume';
+  setViz(false);
+}
+function resetTimer(){
+  pauseTimer(); timerSeconds=timerTotal;
+  document.getElementById('startStopBtn').textContent='▶ Start';
+  document.getElementById('mainTime').classList.remove('warning','danger');
+  document.getElementById('ringProgress').classList.remove('warning','danger');
+  document.getElementById('ringProgress').style.strokeDashoffset=0;
+  updateTimerDisplay();
+}
+function timerComplete(){
+  clearInterval(timerInterval); timerRunning=false;
+  document.getElementById('startStopBtn').textContent='▶ Start';
+  setViz(false); playSound('bell');
+  showNotif('Session Complete ✓','Your '+formatTime(timerTotal)+' session is done.');
+  stats.sessions++; stats.focused+=Math.round(timerTotal/60);
+  stats.history.unshift({time:new Date().toLocaleTimeString(),duration:formatTime(timerTotal)});
+  if(stats.history.length>10)stats.history.pop();
+  if(pomoPhase==='work'){
+    if(pomoSession<4){setTimeout(()=>{pomoPhase='break';startPomodoro();},2000);}
+    else{showNotif('Pomodoro Complete 🍅','4 sessions done. Great work!');pomoSession=1;pomoPhase='work';updatePomoDisplay();}
+  } else{pomoPhase='work';pomoSession++;updatePomoDisplay();}
+}
+function setPreset(s){
+  pauseTimer(); timerSeconds=s; timerTotal=s; isCountdown=true;
+  document.getElementById('startStopBtn').textContent='▶ Start';
+  document.getElementById('inputH').value=Math.floor(s/3600);
+  document.getElementById('inputM').value=Math.floor((s%3600)/60);
+  document.getElementById('inputS').value=s%60;
+  updateTimerDisplay();
+}
+function syncCustomTime(){
+  const h=parseInt(document.getElementById('inputH').value)||0;
+  const m=parseInt(document.getElementById('inputM').value)||0;
+  const s=parseInt(document.getElementById('inputS').value)||0;
+  const total=h*3600+m*60+s;
+  if(!timerRunning){timerSeconds=total;timerTotal=total;updateTimerDisplay();}
+}
+function addTime(s){timerSeconds+=s;timerTotal+=s;updateTimerDisplay();}
+setPreset(300);
+
+// ═══════════════════════════════════
+// POMODORO
+// ═══════════════════════════════════
+function updatePomoDisplay(){
+  const c=document.getElementById('pomoSessions'); c.innerHTML='';
+  for(let i=1;i<=4;i++){
+    const d=document.createElement('div');
+    d.className='pomo-dot';
+    if(i<pomoSession)d.classList.add('done');
+    if(i===pomoSession)d.classList.add('current');
+    c.appendChild(d);
+  }
+  document.getElementById('pomoNum').textContent=Math.min(pomoSession,4);
+  document.getElementById('pomoPhase').textContent=pomoPhase.toUpperCase();
+}
+function startPomodoro(){
+  setPreset(pomoPhase==='work'?1500:300);
+  document.getElementById('modeBadge').textContent=pomoPhase==='work'?'🍅 Pomodoro Work':'☕ Break';
+  document.getElementById('modeBadge').className='mode-badge '+(pomoPhase==='work'?'pomodoro':'stopwatch');
+  updatePomoDisplay(); startTimer(); switchTab('timer');
+}
+updatePomoDisplay();
+
+// ═══════════════════════════════════
+// STOPWATCH
+// ═══════════════════════════════════
+function toggleStopwatch(){
+  if(swRunning){
+    swRunning=false; clearInterval(swInterval);
+    swElapsed+=Date.now()-swStartTime;
+    document.getElementById('swStartBtn').textContent='▶ Resume';
+    document.getElementById('lapBtn').disabled=false;
+  } else {
+    swRunning=true; swStartTime=Date.now();
+    swInterval=setInterval(updateSW,10);
+    document.getElementById('swStartBtn').textContent='⏸ Pause';
+    document.getElementById('lapBtn').disabled=false;
+  }
+}
+function updateSW(){
+  const total=swElapsed+(Date.now()-swStartTime);
+  document.getElementById('swH').textContent=pad(Math.floor(total/3600000));
+  document.getElementById('swM').textContent=pad(Math.floor((total%3600000)/60000));
+  document.getElementById('swS').textContent=pad(Math.floor((total%60000)/1000));
+  document.getElementById('swMs').textContent=pad(Math.floor((total%1000)/10));
+  if(focusMode)document.getElementById('focusTime').textContent=`${pad(Math.floor(total/3600000))}:${pad(Math.floor((total%3600000)/60000))}:${pad(Math.floor((total%60000)/1000))}`;
+}
+function lapStopwatch(){
+  if(!swRunning&&swElapsed===0)return;
+  const total=swElapsed+(swRunning?Date.now()-swStartTime:0);
+  const prev=laps.length>0?laps[laps.length-1].total:0;
+  laps.push({num:laps.length+1,total,delta:total-prev});
+  renderLaps();
+}
+function renderLaps(){
+  const el=document.getElementById('lapsList');
+  if(laps.length===0){el.innerHTML='<div style="text-align:center;color:var(--ink-light);font-size:10px;padding:20px;letter-spacing:1px;">No laps recorded yet</div>';return;}
+  const deltas=laps.map(l=>l.delta),minD=Math.min(...deltas),maxD=Math.max(...deltas);
+  el.innerHTML=[...laps].reverse().map(l=>{
+    const cls=l.delta===minD&&laps.length>1?'lap-fastest':l.delta===maxD&&laps.length>1?'lap-slowest':'';
+    return `<div class="lap-item"><span class="lap-num">Lap ${l.num}</span><span class="lap-time">${fmtMs(l.total)}</span><span class="lap-delta ${cls}">+${fmtMs(l.delta)}</span></div>`;
+  }).join('');
+}
+function fmtMs(ms){return `${pad(Math.floor(ms/60000))}:${pad(Math.floor((ms%60000)/1000))}.${pad(Math.floor((ms%1000)/10))}`;}
+function resetStopwatch(){
+  swRunning=false; clearInterval(swInterval); swElapsed=0; laps=[];
+  ['swH','swM','swS','swMs'].forEach(id=>document.getElementById(id).textContent='00');
+  document.getElementById('swStartBtn').textContent='▶ Start';
+  document.getElementById('lapBtn').disabled=true;
+  renderLaps();
+}
+
+// ═══════════════════════════════════
+// ALARM
+// ═══════════════════════════════════
+function addAlarm(){
+  const time=document.getElementById('alarmTime').value;
+  const label=document.getElementById('alarmLabel').value||'Alarm';
+  if(!time)return;
+  alarms.push({time,label,on:true,id:Date.now()});
+  stats.alarms++; renderAlarms();
+  showNotif('Alarm Set 🔔',`${label} at ${time}`);
+}
+function renderAlarms(){
+  const el=document.getElementById('alarmList');
+  if(alarms.length===0){el.innerHTML='<div style="text-align:center;color:var(--ink-light);font-size:10px;padding:20px;letter-spacing:1px;">No alarms set</div>';return;}
+  el.innerHTML=alarms.map((a,i)=>`
+    <div class="alarm-item ${a.on?'active-alarm':''}">
+      <div><div class="alarm-time-disp">${a.time}</div><div class="alarm-label">${a.label}</div></div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="alarm-toggle ${a.on?'on':''}" onclick="toggleAlarm(${i})"></div>
+        <button class="btn btn-danger" style="padding:6px 12px;font-size:9px;" onclick="deleteAlarm(${i})">Remove</button>
+      </div>
+    </div>`).join('');
+}
+function toggleAlarm(i){alarms[i].on=!alarms[i].on;renderAlarms();}
+function deleteAlarm(i){alarms.splice(i,1);renderAlarms();}
+function checkAlarms(now){
+  const curr=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  alarms.forEach(a=>{if(a.on&&a.time===curr&&now.getSeconds()===0){playSound('chime');showNotif('⏰ '+a.label,'It\'s '+a.time+'!');}});
+}
+
+// ═══════════════════════════════════
+// WORLD CLOCK
+// ═══════════════════════════════════
+const worldZones=[
+  {city:'New York',zone:'America/New_York',flag:'🇺🇸'},
+  {city:'London',zone:'Europe/London',flag:'🇬🇧'},
+  {city:'Paris',zone:'Europe/Paris',flag:'🇫🇷'},
+  {city:'Dubai',zone:'Asia/Dubai',flag:'🇦🇪'},
+  {city:'Mumbai',zone:'Asia/Kolkata',flag:'🇮🇳'},
+  {city:'Singapore',zone:'Asia/Singapore',flag:'🇸🇬'},
+  {city:'Tokyo',zone:'Asia/Tokyo',flag:'🇯🇵'},
+  {city:'Sydney',zone:'Australia/Sydney',flag:'🇦🇺'},
+];
+function updateWorldClocks(){
+  const now=new Date();
+  document.getElementById('worldClocks').innerHTML=worldZones.map(z=>`
+    <div class="wc-item">
+      <div><div class="wc-city">${z.flag} ${z.city}</div><div class="wc-zone">${z.zone}</div></div>
+      <div style="text-align:right;">
+        <div class="wc-time">${now.toLocaleTimeString('en-US',{timeZone:z.zone,hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})}</div>
+        <div class="wc-day">${now.toLocaleDateString('en-US',{timeZone:z.zone,weekday:'short',month:'short',day:'numeric'})}</div>
+      </div>
+    </div>`).join('');
+}
+setInterval(updateWorldClocks,1000);
+updateWorldClocks();
+
+// ═══════════════════════════════════
+// BREATHING
+// ═══════════════════════════════════
+const breathTechniques={
+  '478':{name:'4-7-8',steps:['INHALE','HOLD','EXHALE',''],times:[4,7,8,0],desc:'Inhale for 4 counts, hold for 7, exhale for 8. A natural tranquilizer for the nervous system.'},
+  'box':{name:'Box Breathing',steps:['INHALE','HOLD','EXHALE','HOLD'],times:[4,4,4,4],desc:'4 counts each for inhale, hold, exhale, hold. Used by Navy SEALs to stay calm under pressure.'},
+  'wim':{name:'Wim Hof',steps:['INHALE','EXHALE','HOLD','BREATHE'],times:[2,2,4,1],desc:'Deep rapid breaths followed by retention. Energizing and focus-enhancing technique.'},
+};
+function startBreathing(tech){
+  stopBreathing(); breathTech=breathTechniques[tech]; breathStepIdx=0; breathCount=0;
+  document.getElementById('breathDesc').textContent=breathTech.desc;
+  runBreathStep();
+}
+function runBreathStep(){
+  const step=breathTech.steps[breathStepIdx],dur=breathTech.times[breathStepIdx];
+  if(!step||dur===0){nextBreathStep();return;}
+  document.getElementById('breathPhase').textContent=step;
+  breathCount=dur; document.getElementById('breathCount').textContent=breathCount;
+  const ring=document.getElementById('breathRing');
+  ring.style.transform=step==='INHALE'?'scale(1.35)':step==='EXHALE'?'scale(1.0)':'scale(1.18)';
+  breathInterval=setInterval(()=>{
+    breathCount--; document.getElementById('breathCount').textContent=breathCount||'—';
+    if(breathCount<=0){clearInterval(breathInterval);nextBreathStep();}
+  },1000);
+}
+function nextBreathStep(){
+  breathStepIdx++; if(breathStepIdx>=breathTech.steps.length)breathStepIdx=0;
+  setTimeout(runBreathStep,200);
+}
+function stopBreathing(){
+  clearInterval(breathInterval);
+  document.getElementById('breathPhase').textContent='Ready';
+  document.getElementById('breathCount').textContent='—';
+  document.getElementById('breathRing').style.transform='scale(1)';
+}
+
+// ═══════════════════════════════════
+// SOUND
+// ═══════════════════════════════════
+let audioCtx=null;
+function getAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function playSound(type){
+  try{
+    const ac=getAudio();
+    if(type==='bell'){
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.connect(g);g.connect(ac.destination);
+      o.frequency.setValueAtTime(880,ac.currentTime);
+      o.frequency.exponentialRampToValueAtTime(220,ac.currentTime+1);
+      g.gain.setValueAtTime(0.25,ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+1);
+      o.start();o.stop(ac.currentTime+1);
+    } else if(type==='beep'){
+      [0,.15,.3].forEach(t=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);o.frequency.value=880;
+        g.gain.setValueAtTime(0.15,ac.currentTime+t);
+        g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+t+0.1);
+        o.start(ac.currentTime+t);o.stop(ac.currentTime+t+0.1);
+      });
+    } else if(type==='chime'){
+      [523,659,784,1047].forEach((f,i)=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0.18,ac.currentTime+i*0.12);
+        g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.12+0.5);
+        o.start(ac.currentTime+i*0.12);o.stop(ac.currentTime+i*0.12+0.5);
+      });
+    }
+  }catch(e){}
+}
+
+// ═══════════════════════════════════
+// VISUALIZER
+// ═══════════════════════════════════
+function setViz(on){
+  ['sideViz','focusViz'].forEach(id=>{
+    document.getElementById(id).querySelectorAll('.bar').forEach(b=>{
+      on?b.classList.add('active'):b.classList.remove('active');
+    });
+  });
+}
+
+// ═══════════════════════════════════
+// FOCUS
+// ═══════════════════════════════════
+function enterFocus(){
+  document.getElementById('focusOverlay').classList.add('active');
+  focusMode=true;
+  document.getElementById('focusTime').textContent=document.getElementById('mainTime').textContent;
+}
+function exitFocus(){
+  document.getElementById('focusOverlay').classList.remove('active');
+  focusMode=false;
+}
+
+// ═══════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════
+function showNotif(title,body){
+  const el=document.getElementById('notif');
+  document.getElementById('notifTitle').textContent=title;
+  document.getElementById('notifBody').textContent=body;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),4000);
+  if('Notification'in window&&Notification.permission==='granted')new Notification(title,{body});
+}
+if('Notification'in window)Notification.requestPermission();
+
+// ═══════════════════════════════════
+// STATS
+// ═══════════════════════════════════
+function updateStats(){
+  document.getElementById('statSessions').textContent=stats.sessions;
+  document.getElementById('statFocused').textContent=stats.focused;
+  document.getElementById('statAlarms').textContent=stats.alarms;
+  const h=document.getElementById('sessionHistory');
+  if(!stats.history.length){h.textContent='No sessions yet.';return;}
+  h.innerHTML=stats.history.map(s=>`
+    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--warm-white);border-radius:8px;margin-bottom:6px;font-size:10px;">
+      <span style="color:var(--ink-light)">${s.time}</span>
+      <span style="color:var(--gold)">${s.duration}</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.code==='Space'){e.preventDefault();toggleTimer();}
+  if(e.key==='r'||e.key==='R')resetTimer();
+  if(e.key==='f'||e.key==='F')focusMode?exitFocus():enterFocus();
+  if(e.key==='l'||e.key==='L')lapStopwatch();
+  if(e.key==='Escape')exitFocus();
+  if(e.key==='1')switchTab('timer');
+  if(e.key==='2')switchTab('stopwatch');
+  if(e.key==='3')switchTab('alarm');
+  if(e.key==='4')switchTab('world');
+  if(e.key==='5')switchTab('breathing');
+});
+
+// INIT
+updateTimerDisplay();
+renderAlarms();
+renderLaps();
+</script>
+</body>
+</html>
